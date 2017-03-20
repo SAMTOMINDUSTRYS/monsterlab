@@ -95,7 +95,7 @@ void eject() {
 
 void do_sequence() {
   Serial.println("C\tR\tG\tB\tGene\tBase");
-  Serial.println("--------------------------------------");
+  Serial.println("--------------------------------------------");
   digitalWrite(ledpin, HIGH); // LED on
   digitalWrite(EN, LOW); // Enable motor
   digitalWrite(dir, LOW); // Forward motor
