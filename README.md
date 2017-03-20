@@ -8,4 +8,4 @@ We built a Lego DNA sequencer to teach kids about DNA, Sequencing and Phenotypes
 * `software\`: The current version of the `ino` to compile and upload to the Uno.
 * `paperwork\`: Contains the monster record sheet and gene list for our iteration of the activity, you can change these as you wish.
 
-For more information on the **Monster Lab** activity itself, you can read [this blog post](https://samnicholls.net/2017/03/15/lego-sequencer/).
+[Our imgur album](http://imgur.com/gallery/4O8r4) gives a reasonable construction tutorial. For more information on the **Monster Lab** activity itself, you can read [this blog post](https://samnicholls.net/2017/03/15/lego-sequencer/).
