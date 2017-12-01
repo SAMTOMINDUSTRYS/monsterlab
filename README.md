@@ -10,7 +10,7 @@ Yes! Our activity is open-source and we'd love you to use it. This repository co
 * `laser\`: Contains DXF formatted files for the laser cut parts, including the base plate, Lego tray and gear to attach to the stepper. The 3mm and 6mm refers to the thickness of the acrylic used to cut those parts for our model.
 * `wiring\`: Contains a Fritzing diagram for wiring the Arduino Uno, EasyDriver and RGB Colour Sensor. Note that we had to flip the inner pair of wires from our stepper motor but this may differ for yours. [This hook-up guide](https://learn.sparkfun.com/tutorials/easy-driver-hook-up-guide) gives more information on checking the coils of your stepper and how to wire it up.
 * `software\`: The current version of the `ino` to compile and upload to the Uno.
-* `paperwork\`: Contains the monster record sheet and gene list for our iteration of the activity, you can change these as you wish.
+* `paperwork\`: Contains blank and example monster record sheets and gene lists (feel free to use the example from our iteration of the activity at 2017 Science Week)
 
 ## Housekeeping
 ### Licenses
