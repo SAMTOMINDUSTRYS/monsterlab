@@ -1,5 +1,5 @@
 # Monster Lab
-## We sequence monsters.
+### We sequence monsters.
 
 In 2017, we built a Lego DNA sequencer to teach kids about DNA, Sequencing and Phenotypes. This repository contains (almost) everything you would need to construct your own Lego sequencer and run our activity.
 
@@ -9,3 +9,12 @@ In 2017, we built a Lego DNA sequencer to teach kids about DNA, Sequencing and P
 * `paperwork\`: Contains the monster record sheet and gene list for our iteration of the activity, you can change these as you wish.
 
 [Our imgur album](http://imgur.com/gallery/4O8r4) gives a reasonable construction tutorial. For more information on the **Monster Lab** activity itself, you can read [this blog post](https://samnicholls.net/2017/03/15/lego-sequencer/).
+
+## Housekeeping
+### Licenses
+
+* Monster Lab software (`software\`) is made available under the MIT License.
+* Our designs for use with a laser cutter or 3D printer are licensed under a Creative Commons Attribution 4.0 International License.
+* Blank forms (`paperwork\`) are licensed under a Creative Commons Attribution 4.0 International License.
+
+**Monster Lab** was hard work that we aren't paid for, please credit us where you can; such as a link to us in a blog post of your event, or a shout-out to `@monsterdnalab` during your event on Twitter!
