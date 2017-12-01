@@ -1,7 +1,7 @@
-# A Lego DNA Sequencer
-**Legogen Sequenceer 9001**
+# Monster Lab
+## We sequence monsters.
 
-We built a Lego DNA sequencer to teach kids about DNA, Sequencing and Phenotypes. This repository contains (almost) everything you would need to construct your own Lego sequencer and run our activity.
+In 2017, we built a Lego DNA sequencer to teach kids about DNA, Sequencing and Phenotypes. This repository contains (almost) everything you would need to construct your own Lego sequencer and run our activity.
 
 * `laser\`: Contains DXF formatted files for the laser cut parts, including the base plate, Lego tray and gear to attach to the stepper. The 3mm and 6mm refers to the thickness of the acrylic used to cut those parts for our model.
 * `wiring\`: Contains a Fritzing diagram for wiring the Arduino Uno, EasyDriver and RGB Colour Sensor. Note that we had to flip the inner pair of wires from our stepper motor but this may differ for yours. [This hook-up guide](https://learn.sparkfun.com/tutorials/easy-driver-hook-up-guide) gives more information on checking the coils of your stepper and how to wire it up.
