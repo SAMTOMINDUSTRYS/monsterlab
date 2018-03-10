@@ -32,9 +32,12 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 // Screen
 #define TFT_DC 9
 #define TFT_CS 10
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 #define TXT_H 8
 #define TXT_W 5
+#define GRAPH_TOP 17
+#define GRAPH_BOTTOM 69
+#define GRAPH_MAX 15000.0
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 // Motor
 #define stp 4
@@ -48,6 +51,9 @@ int BLOCK_STEP = 165;
 int INIT_STEP = 350;
 int NUM_BLOCKS = 10;
 int REVERSE_STEP = ((NUM_BLOCKS-1) * BLOCK_STEP) + INIT_STEP;
+
+int GRAPH_STEP = 1;
+int GRAPH_FLAG = (BLOCK_STEP / (320/(10*GRAPH_STEP)));
 
 int state;
 int x;
@@ -141,22 +147,26 @@ void do_sequence() {
   tft.println("Legogen Sequenceer 9002");
   tft.setCursor(TXT_W*2*15, TXT_H);
   tft.println("Hoot hoot fuckers");
-  tft.drawFastHLine(0, TXT_H*2, 320, ILI9341_WHITE);
 
+  // Graph space
+  tft.drawFastHLine(0, GRAPH_TOP-1, 320, ILI9341_WHITE);
+  tft.drawFastHLine(0, GRAPH_BOTTOM+1, 320, ILI9341_WHITE);
+
+  // Footer
   tft.setCursor(0, 240-TXT_H);
   tft.println("Sample ID: 105-118-674-00399");
   tft.drawFastHLine(0, 240-TXT_H-2, 320, ILI9341_WHITE);
 
   tft.setTextSize(2);
   tft.setTextColor(ILI9341_RED);  tft.setTextSize(2);
-  tft.setCursor(TXT_W*3, (TXT_H*2)+(TXT_H));
+  tft.setCursor(TXT_W*3, (TXT_H*2)+(TXT_H)+(TXT_H*2)+(TXT_H*2)+(TXT_H*2));
   tft.println("OCU1 OCU2 MEM1 MEM2 FRM1");
   
-  tft.setCursor(TXT_W*3, (TXT_H*2)+(TXT_H*2)+(TXT_H*10)+(TXT_H*2));
+  tft.setCursor(TXT_W*3, (TXT_H*2)+(TXT_H*2)+(TXT_H*10)+(TXT_H*2)+(TXT_H*2)+(TXT_H));
   tft.println("FRM2 MAG1 PT10 DWF7 SPEC");
 
-  tft.setCursor(TXT_W*2, (TXT_H*2)+(TXT_H*2)+(TXT_H*2));
-  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(10);
+  tft.setCursor(TXT_W*2, (TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H));
+  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(8);
   
   Serial.println("C\tR\tG\tB\tGene\tBase");
   Serial.println("--------------------------------------------");
@@ -165,33 +175,73 @@ void do_sequence() {
   digitalWrite(dir, LOW); // Forward motor
   //digitalWrite(MS1, HIGH); //Pull MS1, and MS2 high to set logic to 1/8th microstep resolution
   //digitalWrite(MS2, HIGH);
-  sequence_base(0); //First base
-  for (y = 1; y < NUM_BLOCKS; y++) {
+
+
+  int graph_pos = 0;
+  float r,g,b,c;
+  uint16_t clear_l = GRAPH_BOTTOM-GRAPH_TOP;
+  uint16_t red_l = GRAPH_BOTTOM-GRAPH_TOP;
+  uint16_t green_l = GRAPH_BOTTOM-GRAPH_TOP;
+  uint16_t blue_l = GRAPH_BOTTOM-GRAPH_TOP;
+  uint16_t clear, red, green, blue;
+  
+  //sequence_base(0); //First base
+  for (y = 0; y < NUM_BLOCKS; y++) {
     for (x = 1; x < BLOCK_STEP; x++) {
       digitalWrite(stp, HIGH); //Trigger one step forward
       delay(1);
       digitalWrite(stp, LOW); //Pull step pin low so it can be triggered again
       delay(1);
+
+      if (x % GRAPH_FLAG == 0) {
+        delay(20);  // takes 50ms to read but fuck it
+        tcs.getRawData(&red, &green, &blue, &clear);
+        
+        if (red > GRAPH_MAX){ red = GRAPH_MAX; }; r = 1.0-(red/GRAPH_MAX); if (r < 0){ r = 0; };
+        if (green > GRAPH_MAX){ green = GRAPH_MAX; }; g = 1.0-(green/GRAPH_MAX); if (g < 0){ g = 0; };
+        if (blue > GRAPH_MAX){ blue = GRAPH_MAX; }; b = 1.0-(blue/GRAPH_MAX); if (b < 0){ b = 0; };
+        if (clear > GRAPH_MAX){ clear = GRAPH_MAX; }; c = 1.0-(clear/GRAPH_MAX); if (c < 0){ c = 0; };
+
+        Serial.print(b);
+        Serial.println(blue);
+
+        red = r * (GRAPH_BOTTOM-GRAPH_TOP);
+        green = g * (GRAPH_BOTTOM-GRAPH_TOP);
+        blue = b * (GRAPH_BOTTOM-GRAPH_TOP);
+        clear = c * (GRAPH_BOTTOM-GRAPH_TOP);
+
+        tft.drawLine((graph_pos-1)*GRAPH_STEP, GRAPH_TOP+red_l, graph_pos*GRAPH_STEP, GRAPH_TOP+red, ILI9341_RED);
+        tft.drawLine((graph_pos-1)*GRAPH_STEP, GRAPH_TOP+green_l, graph_pos*GRAPH_STEP, GRAPH_TOP+green, ILI9341_GREEN);
+        tft.drawLine((graph_pos-1)*GRAPH_STEP, GRAPH_TOP+blue_l, graph_pos*GRAPH_STEP, GRAPH_TOP+blue, ILI9341_BLUE);
+        tft.drawLine((graph_pos-1)*GRAPH_STEP, GRAPH_TOP+clear_l, graph_pos*GRAPH_STEP, GRAPH_TOP+clear, ILI9341_WHITE);
+
+        red_l = red;
+        green_l = green;
+        blue_l = blue;
+        clear_l = clear;
+        graph_pos = graph_pos + 1;
+    }
+      
     }
     delay(500);
 
     if (y == 5){
-        tft.setCursor(TXT_W*2, (TXT_H*2)+(TXT_H*2)+(TXT_H*10)+(TXT_H*2)+(TXT_H*2)+(TXT_H)+(TXT_H*2));
+        tft.setCursor(TXT_W, (TXT_H*2)+(TXT_H*2)+(TXT_H*10)+(TXT_H*2)+(TXT_H*2)+(TXT_H)+(TXT_H*2));
     }
+    tft.setTextSize(2);tft.print(" ");tft.setTextSize(8);
     sequence_base(y);
-
 
   } 
   eject();
 }
 
-void sequence_base(int gene_i) {
+uint16_t* sequence_base(int gene_i) {
   uint16_t clear, red, green, blue;
-  tcs.setInterrupt(false);      // turn on LED
+  //tcs.setInterrupt(false);      // turn on LED
 
   delay(60);  // takes 50ms to read
   tcs.getRawData(&red, &green, &blue, &clear);
-  tcs.setInterrupt(true);  // turn off LED
+  //tcs.setInterrupt(true);  // turn off LED
   
   Serial.print(clear);
   Serial.print("\t"); Serial.print(red);
