@@ -5,7 +5,6 @@
    Connect VDD    to 3.3V DC
    Connect GROUND to common ground */
 
-
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
 
 #define stp 2
@@ -45,6 +44,9 @@ void setup() {
   pinMode(MS1, OUTPUT);
   pinMode(MS2, OUTPUT);
   pinMode(EN, OUTPUT);
+
+
+  
   resetEDPins(); //Set step, direction, microstep and enable pins to default states
 
   if (tcs.begin()) {
@@ -52,6 +54,9 @@ void setup() {
     Serial.println("No TCS34725 found ... check your connections");
     while (1); // halt!
   }
+
+  // LED off to prevent overheating
+  tcs.setInterrupt(true);
 
   digitalWrite(EN, LOW); // Enable motor
   digitalWrite(dir, LOW); // Forward motor
@@ -73,7 +78,8 @@ void setup() {
 }
 
 void eject() {
-
+  // LED off
+  tcs.setInterrupt(true);
   digitalWrite(dir, HIGH); // Reverse motor
   delay(500);
   digitalWrite(MS1, HIGH); //Pull MS1, and MS2 high to set logic to 1/8th microstep resolution
@@ -90,6 +96,7 @@ void eject() {
 void do_sequence() {
   Serial.println("C\tR\tG\tB\tGene\tBase");
   Serial.println("--------------------------------------------");
+  tcs.setInterrupt(false);      // turn on LED
   digitalWrite(EN, LOW); // Enable motor
   digitalWrite(dir, LOW); // Forward motor
   digitalWrite(MS1, HIGH); //Pull MS1, and MS2 high to set logic to 1/8th microstep resolution
