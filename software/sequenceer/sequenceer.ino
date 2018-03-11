@@ -78,7 +78,7 @@ void setup() {
   // Setup screen
   tft.begin();
   tft.setRotation(1);
-  testText();
+  screenWelcome();
 
   // Setup motor
   pinMode(stp, OUTPUT);
@@ -165,7 +165,7 @@ void do_sequence() {
   tft.setCursor(TXT_W*3, (TXT_H*2)+(TXT_H*2)+(TXT_H*10)+(TXT_H*2)+(TXT_H*2)+(TXT_H));
   tft.println("FRM2 MAG1 PT10 DWF7 SPEC");
 
-  tft.setCursor(TXT_W*2, (TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H));
+  tft.setCursor(TXT_W*1, (TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H*2)+(TXT_H));
   tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(8);
   
   Serial.println("C\tR\tG\tB\tGene\tBase");
@@ -194,16 +194,13 @@ void do_sequence() {
       delay(1);
 
       if (x % GRAPH_FLAG == 0) {
-        delay(20);  // takes 50ms to read but fuck it
+        delay(12);  // takes 50ms to read but fuck it
         tcs.getRawData(&red, &green, &blue, &clear);
         
         if (red > GRAPH_MAX){ red = GRAPH_MAX; }; r = 1.0-(red/GRAPH_MAX); if (r < 0){ r = 0; };
         if (green > GRAPH_MAX){ green = GRAPH_MAX; }; g = 1.0-(green/GRAPH_MAX); if (g < 0){ g = 0; };
         if (blue > GRAPH_MAX){ blue = GRAPH_MAX; }; b = 1.0-(blue/GRAPH_MAX); if (b < 0){ b = 0; };
         if (clear > GRAPH_MAX){ clear = GRAPH_MAX; }; c = 1.0-(clear/GRAPH_MAX); if (c < 0){ c = 0; };
-
-        Serial.print(b);
-        Serial.println(blue);
 
         red = r * (GRAPH_BOTTOM-GRAPH_TOP);
         green = g * (GRAPH_BOTTOM-GRAPH_TOP);
@@ -290,62 +287,58 @@ void resetEDPins()
   //digitalWrite(EN, HIGH);
 }
 
-
-unsigned long testText() {
-  tft.fillScreen(ILI9341_BLACK);
-  unsigned long start = micros();
-  tft.setCursor(0, 0);
-  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(1);
-  tft.println("Hello World!");
-  tft.setTextColor(ILI9341_YELLOW); tft.setTextSize(2);
-  tft.println(1234.56);
-  tft.setTextColor(ILI9341_RED);    tft.setTextSize(3);
-  tft.println(0xDEADBEEF, HEX);
-  tft.println();
-  tft.setTextColor(ILI9341_GREEN);
-  tft.setTextSize(5);
-  tft.println("Monster Lab");
-  tft.setTextSize(2);
-  tft.println("I implore thee,");
-  tft.setTextSize(1);
-  tft.println("my foonting turlingdromes.");
-  tft.println("And hooptiously drangle me");
-  tft.println("with crinkly bindlewurdles,");
-  tft.println("Or I will rend thee");
-  tft.println("in the gobberwarts");
-  tft.println("with my blurglecruncheon,");
-  tft.println("see if I don't!");
-  return micros() - start;
-}
-
 void resetScreen(){
   tft.fillScreen(ILI9341_BLACK);
   tft.setCursor(0, 0);
 }
 
-unsigned long screenBase() {
-  tft.fillScreen(ILI9341_BLACK);
-  unsigned long start = micros();
-  tft.setCursor(0, 0);
-  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(1);
-  tft.println("Hello World!");
-  tft.setTextColor(ILI9341_YELLOW); tft.setTextSize(2);
-  tft.println(1234.56);
-  tft.setTextColor(ILI9341_RED);    tft.setTextSize(3);
-  tft.println(0xDEADBEEF, HEX);
-  tft.println();
-  tft.setTextColor(ILI9341_GREEN);
-  tft.setTextSize(5);
-  tft.println("Monster Lab");
-  tft.setTextSize(2);
-  tft.println("I implore thee,");
+void screenWelcome() {
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+
+  int offset = 55;
+  tft.setCursor(95, offset);
   tft.setTextSize(1);
-  tft.println("my foonting turlingdromes.");
-  tft.println("And hooptiously drangle me");
-  tft.println("with crinkly bindlewurdles,");
-  tft.println("Or I will rend thee");
-  tft.println("in the gobberwarts");
-  tft.println("with my blurglecruncheon,");
-  tft.println("see if I don't!");
-  return micros() - start;
+  tft.println("Sam and Tom Industrys");
+
+  tft.setCursor(27, offset+20);
+  tft.setTextSize(4);
+  tft.println("MONSTER LAB");
+
+  tft.setCursor(20, offset+55);
+  tft.setTextSize(2);
+  tft.println("Legogen Sequenceer 9002");
+
+  tft.setCursor(0, offset+90);
+  tft.setTextSize(2);
+  tft.setTextColor(ILI9341_RED, ILI9341_WHITE);
+
+
+  char* messages[]={
+  "  Preparing Pyrosequences",
+  "       Opening Pores        ",
+  "   Simulating Evolution   ",
+  "     Hunting Monsters   ",
+  "  Stirring Genetic Pool  ",
+  "   Reticulating Splines",
+  "  OMG THIS ACTUALLY WORKS"
+  };
+
+  int n_messages = 7;
+  int message_block = 320/n_messages;
+  int curr_msg = 0;
+  
+  for (x = 0; x < 320; x++) {
+      tft.drawLine(x-1, 180, x, 180, ILI9341_BLUE);
+      delay(25);
+
+      if(x == 0 || x % message_block == 0){
+          tft.setCursor(0, offset+90);
+          tft.println(messages[curr_msg]);
+
+          if (curr_msg + 1 < n_messages){
+            curr_msg = curr_msg + 1;
+          }
+      }
+  }
 }
