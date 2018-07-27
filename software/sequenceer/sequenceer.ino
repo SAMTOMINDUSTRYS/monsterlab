@@ -2,6 +2,7 @@
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #include "Adafruit_TCS34725.h"
+#include "BasicStepperDriver.h"
 
 /* 
    RGB Colour Sensor
@@ -32,28 +33,38 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS3472
 // Screen
 #define TFT_DC 9
 #define TFT_CS 10
+#define TFT_RST 7
 #define TXT_H 8
 #define TXT_W 5
 #define GRAPH_TOP 17
 #define GRAPH_BOTTOM 69
 #define GRAPH_MAX 15000.0
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+#define TFT_WIDTH 320
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 
 // Motor
-#define stp 4
-#define dir 3
-//#define MS1 4
-//#define MS2 5
-//#define EN  6
+#define STP 3
+#define DIR 4
+#define EN  5
 
+#include "A4988.h"
+#define MS1 6
+#define MS2 8 
+#define MS3 2 // lol it cant be 7 ffs
 
-int BLOCK_STEP = 165;
-int INIT_STEP = 350;
+#define MOTOR_STEPS 200
+#define RPM 120
+A4988 stepper(MOTOR_STEPS, DIR, STP, EN, MS1, MS2, MS3);
+
+#define RST_BTN 12
+
+int BLOCK_STEP = 165*2;
+int INIT_STEP = 270*2;
 int NUM_BLOCKS = 10;
-int REVERSE_STEP = ((NUM_BLOCKS-1) * BLOCK_STEP) + INIT_STEP;
+int REVERSE_STEP = ((NUM_BLOCKS) * BLOCK_STEP) + INIT_STEP;
 
 int GRAPH_STEP = 1;
-int GRAPH_FLAG = (BLOCK_STEP / (320/(10*GRAPH_STEP)));
+int GRAPH_FLAG = (BLOCK_STEP / (TFT_WIDTH/(10*GRAPH_STEP)));
 
 int state;
 int x;
@@ -75,21 +86,17 @@ char* genes[]={
 void setup() {
   Serial.begin(9600); //Open Serial connection for debugging
 
+  // Setup motor
+  stepper.begin(RPM);
+  stepper.setMicrostep(16);
+
   // Setup screen
   tft.begin();
-  tft.setRotation(1);
+  tft.setRotation(3);
   screenWelcome();
 
-  // Setup motor
-  pinMode(stp, OUTPUT);
-  pinMode(dir, OUTPUT);
-  //pinMode(MS1, OUTPUT);
-  //pinMode(MS2, OUTPUT);
-  //pinMode(EN, OUTPUT);
-
-
-  
-  resetEDPins(); //Set step, direction, microstep and enable pins to default states
+  // Setup buttan
+  pinMode(RST_BTN, INPUT);
 
   if (tcs.begin()) {
   } else {
@@ -100,39 +107,34 @@ void setup() {
   // LED off to prevent overheating
   tcs.setInterrupt(true);
 
-  //digitalWrite(EN, LOW); // Enable motor
-  digitalWrite(dir, LOW); // Forward motor
-  //digitalWrite(MS1, HIGH); //Pull MS1, and MS2 high to set logic to 1/8th microstep resolution
-  //digitalWrite(MS2, HIGH);
-  for (x = 1; x < INIT_STEP; x++) {
-    digitalWrite(stp, HIGH); //Trigger one step forward
-    delay(1);
-    digitalWrite(stp, LOW); //Pull step pin low so it can be triggered again
-    delay(1);
+  while(true){
+    screenWaiting();
+    while(digitalRead(RST_BTN) == HIGH); // wait for buttan press
+    
+    screenMiniWelcome();
+    stepper.enable();
+    stepper.move(-INIT_STEP);
+    delay(1000); // pause for dramatic effect
+    do_sequence();
+    stepper.disable();
+
+    tft.setTextSize(1);
+    tft.setTextColor(ILI9341_GREEN, ILI9341_BLACK);
+    tft.setCursor(0, 240-TXT_H);
+    tft.println("STATUS: SEQUENCING COMPLETE! WAITING FOR BUTTAN PRESS...");
+
+    unsigned long time_called = millis();
+    while(digitalRead(RST_BTN) == HIGH){ if (millis() - time_called > 90000UL){ break; }}
   }
-
-  delay(1000);
-  digitalWrite(dir, LOW); // Forward motor
-  //digitalWrite(MS1, HIGH); //Pull MS1, and MS2 high to set logic to 1/8th microstep resolution
-  //digitalWrite(MS2, HIGH);
-
-  do_sequence();
 }
 
 void eject() {
   // LED off
   tcs.setInterrupt(true);
-  digitalWrite(dir, HIGH); // Reverse motor
   delay(500);
-  //digitalWrite(MS1, HIGH); //Pull MS1, and MS2 high to set logic to 1/8th microstep resolution
-  //digitalWrite(MS2, HIGH);
-  for (x = 1; x < REVERSE_STEP; x++) {
-    digitalWrite(stp, HIGH);
-    delay(1);
-    digitalWrite(stp, LOW);
-    delay(1);
-  }
-  //digitalWrite(EN, HIGH); // Disable motor
+
+  stepper.move(REVERSE_STEP);
+
 }
 
 void do_sequence() {
@@ -146,16 +148,16 @@ void do_sequence() {
   tft.setCursor(TXT_W*2*15, 0);
   tft.println("Legogen Sequenceer 9002");
   tft.setCursor(TXT_W*2*15, TXT_H);
-  tft.println("Hoot hoot fuckers");
+  tft.println("h_v1.9 s_v20180312");
 
   // Graph space
-  tft.drawFastHLine(0, GRAPH_TOP-1, 320, ILI9341_WHITE);
-  tft.drawFastHLine(0, GRAPH_BOTTOM+1, 320, ILI9341_WHITE);
+  tft.drawFastHLine(0, GRAPH_TOP-1, TFT_WIDTH, ILI9341_WHITE);
+  tft.drawFastHLine(0, GRAPH_BOTTOM+1, TFT_WIDTH, ILI9341_WHITE);
 
   // Footer
   tft.setCursor(0, 240-TXT_H);
-  tft.println("Sample ID: 105-118-674-00399");
-  tft.drawFastHLine(0, 240-TXT_H-2, 320, ILI9341_WHITE);
+  tft.println("STATUS: SEQUENCING MONSTER GENOME...");
+  tft.drawFastHLine(0, 240-TXT_H-2, TFT_WIDTH, ILI9341_WHITE);
 
   tft.setTextSize(2);
   tft.setTextColor(ILI9341_RED);  tft.setTextSize(2);
@@ -171,10 +173,7 @@ void do_sequence() {
   Serial.println("C\tR\tG\tB\tGene\tBase");
   Serial.println("--------------------------------------------");
   tcs.setInterrupt(false);      // turn on LED
-  //digitalWrite(EN, LOW); // Enable motor
-  digitalWrite(dir, LOW); // Forward motor
-  //digitalWrite(MS1, HIGH); //Pull MS1, and MS2 high to set logic to 1/8th microstep resolution
-  //digitalWrite(MS2, HIGH);
+
 
 
   int graph_pos = 0;
@@ -185,18 +184,19 @@ void do_sequence() {
   uint16_t blue_l = GRAPH_BOTTOM-GRAPH_TOP;
   uint16_t clear, red, green, blue;
   
-  //sequence_base(0); //First base
   for (y = 0; y < NUM_BLOCKS; y++) {
+    //stepper.move(-BLOCK_STEP);
+    
     for (x = 1; x < BLOCK_STEP; x++) {
-      digitalWrite(stp, HIGH); //Trigger one step forward
-      delay(1);
-      digitalWrite(stp, LOW); //Pull step pin low so it can be triggered again
-      delay(1);
-
+      stepper.move(-1);
       if (x % GRAPH_FLAG == 0) {
-        delay(12);  // takes 50ms to read but fuck it
+        //delay(10);  // takes 50ms to read but fuck it
         tcs.getRawData(&red, &green, &blue, &clear);
-        
+        red = red + random(-1000, 1000);
+        green = green + random(-1000, 1000);
+        blue = blue + random(-1000, 1000);
+        clear = clear + random(-1000, 1000);
+
         if (red > GRAPH_MAX){ red = GRAPH_MAX; }; r = 1.0-(red/GRAPH_MAX); if (r < 0){ r = 0; };
         if (green > GRAPH_MAX){ green = GRAPH_MAX; }; g = 1.0-(green/GRAPH_MAX); if (g < 0){ g = 0; };
         if (blue > GRAPH_MAX){ blue = GRAPH_MAX; }; b = 1.0-(blue/GRAPH_MAX); if (b < 0){ b = 0; };
@@ -234,11 +234,9 @@ void do_sequence() {
 
 uint16_t* sequence_base(int gene_i) {
   uint16_t clear, red, green, blue;
-  //tcs.setInterrupt(false);      // turn on LED
 
   delay(60);  // takes 50ms to read
   tcs.getRawData(&red, &green, &blue, &clear);
-  //tcs.setInterrupt(true);  // turn off LED
   
   Serial.print(clear);
   Serial.print("\t"); Serial.print(red);
@@ -246,7 +244,7 @@ uint16_t* sequence_base(int gene_i) {
   Serial.print("\t"); Serial.print(blue);
   Serial.print("\t"); Serial.print(genes[gene_i]);
   Serial.print("\t");
-  if(clear > 10000){
+  if(clear > 15000){
     Serial.print("C");
     tft.print("C");
   }
@@ -277,15 +275,6 @@ void loop() {
 
 }
 
-//Reset Easy Driver pins to default states
-void resetEDPins()
-{
-  digitalWrite(stp, LOW);
-  digitalWrite(dir, LOW);
-  //digitalWrite(MS1, LOW);
-  //digitalWrite(MS2, LOW);
-  //digitalWrite(EN, HIGH);
-}
 
 void resetScreen(){
   tft.fillScreen(ILI9341_BLACK);
@@ -325,12 +314,12 @@ void screenWelcome() {
   };
 
   int n_messages = 7;
-  int message_block = 320/n_messages;
+  int message_block = TFT_WIDTH/n_messages;
   int curr_msg = 0;
   
-  for (x = 0; x < 320; x++) {
+  for (x = 0; x < TFT_WIDTH; x++) {
       tft.drawLine(x-1, 180, x, 180, ILI9341_BLUE);
-      delay(25);
+      delay(20);
 
       if(x == 0 || x % message_block == 0){
           tft.setCursor(0, offset+90);
@@ -341,4 +330,84 @@ void screenWelcome() {
           }
       }
   }
+}
+
+
+void screenMiniWelcome() {
+  tft.setTextWrap(false);
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+
+  int offset = 55;
+  tft.setCursor(95, offset);
+  tft.setTextSize(1);
+  tft.println("Sam and Tom Industrys");
+
+  tft.setCursor(27, offset+20);
+  tft.setTextSize(4);
+  tft.println("MONSTER LAB");
+
+  tft.setCursor(20, offset+55);
+  tft.setTextSize(2);
+  tft.println("Legogen Sequenceer 9002");
+
+  tft.setCursor(0, offset+90);
+  tft.setTextSize(2);
+  tft.setTextColor(ILI9341_YELLOW, ILI9341_BLACK);
+
+
+  char* messages[]={
+  "    Starting Sequencer         ",
+  };
+
+  int n_messages = 1;
+  int message_block = TFT_WIDTH/n_messages;
+  int curr_msg = 0;
+  
+  for (x = 0; x < TFT_WIDTH; x++) {
+      tft.drawLine(x-1, 180, x, 180, ILI9341_BLUE);
+      delay(10);
+
+      if(x == 0 || x % message_block == 0){
+          tft.setCursor(0, offset+90);
+          tft.println(messages[curr_msg]);
+
+          if (curr_msg + 1 < n_messages){
+            curr_msg = curr_msg + 1;
+          }
+      }
+  }
+  tft.setTextWrap(true);
+}
+
+
+
+
+void screenWaiting() {
+ 
+  tft.setTextWrap(false);
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+
+  int offset = 55;
+  tft.setCursor(95, offset);
+  tft.setTextSize(1);
+  tft.println("Sam and Tom Industrys");
+
+  tft.setCursor(27, offset+20);
+  tft.setTextSize(4);
+  tft.println("MONSTER LAB");
+
+  tft.setCursor(20, offset+55);
+  tft.setTextSize(2);
+  tft.println("Legogen Sequenceer 9002");
+
+  tft.setCursor(0, offset+90);
+  tft.setTextSize(2);
+  tft.setTextColor(ILI9341_GREEN, ILI9341_BLACK);
+
+  tft.setCursor(0, offset+90);
+  tft.println("    WAITING TO SEQUENCE       ");
+  tft.setTextWrap(true);
+
 }
